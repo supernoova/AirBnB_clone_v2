@@ -1,78 +1,91 @@
 #!/usr/bin/python3
-""" Fabric script (based on the file 2-do_deploy_web_static.py) that creates
-and distributes an archive to your web servers, using the function deploy: """
-
-
+"""a script to pack static content into a tarball
+"""
 from fabric.api import *
+from fabric.operations import put
 from datetime import datetime
-from os.path import exists
-# do_pack = __import__('1-pack_web_static').do_pack
-# do_deploy = __import__('2-do_deploy_web_static').do_deploy
+import os
 
-
-env.hosts = ['35.237.166.125', '54.167.61.201']  # <IP web-01>, <IP web-02>
-# ^ All remote commands must be executed on your both web servers
-# (using env.hosts = ['<IP web-01>', 'IP web-02'] variable in your script)
+env.hosts = ['35.243.204.105', '35.190.182.239']
 
 
 def do_pack():
-    """generates a .tgz archive from the contents of the web_static folder
+    """packages all contents from web_static into .tgz archive
     """
-    local("sudo mkdir -p versions")
-    date = datetime.now().strftime("%Y%m%d%H%M%S")
-    filename = "versions/web_static_{}.tgz".format(date)
-    result = local("sudo tar -cvzf {} web_static".format(filename))
-    if result.succeeded:
-        return filename
-    else:
+    now = datetime.now().strftime("%Y%m%d%H%M%S")
+    local('mkdir -p versions')
+    filename = 'versions/web_static_{}.tgz'.format(now)
+    result = local('tar -cvzf {} web_static'
+                   .format(filename), capture=True)
+    if result.failed:
+        print('Failed to create tar package')
         return None
+    else:
+        return filename
 
 
 def do_deploy(archive_path):
-    """ distributes an archive to my web servers
+    """deploys a static archive to web servers
     """
-    if exists(archive_path) is False:
-        return False  # Returns False if the file at archive_path doesnt exist
-    filename = archive_path.split('/')[-1]
-    # so now filename is <web_static_2021041409349.tgz>
-    no_tgz = '/data/web_static/releases/' + "{}".format(filename.split('.')[0])
-    # curr = '/data/web_static/current'
-    tmp = "/tmp/" + filename
-
-    try:
-        put(archive_path, "/tmp/")
-        # ^ Upload the archive to the /tmp/ directory of the web server
-        run("mkdir -p {}/".format(no_tgz))
-        # Uncompress the archive to the folder /data/web_static/releases/
-        # <archive filename without extension> on the web server
-        run("tar -xzf {} -C {}/".format(tmp, no_tgz))
-        run("rm {}".format(tmp))
-        run("mv {}/web_static/* {}/".format(no_tgz, no_tgz))
-        run("rm -rf {}/web_static".format(no_tgz))
-        # ^ Delete the archive from the web server
-        run("rm -rf /data/web_static/current")
-        # Delete the symbolic link /data/web_static/current from the web server
-        run("ln -s {}/ /data/web_static/current".format(no_tgz))
-        # Create a new the symbolic link /data/web_static/current on the
-        # web server, linked to the new version of your code
-        # (/data/web_static/releases/<archive filename without extension>)
-        return True
-    except:
+    if not os.path.isfile(archive_path):
+        print('archive file does not exist...')
         return False
+    try:
+        archive = archive_path.split('/')[1]
+        no_ext_archive = archive.split('.')[0]
+    except:
+        print('failed to get archive name from split...')
+        return False
+    uploaded = put(archive_path, '/tmp/')
+    if uploaded.failed:
+        return False
+    res = run('mkdir -p /data/web_static/releases/{}/'.format(no_ext_archive))
+    if res.failed:
+        print('failed to create archive directory for relase...')
+        return False
+    res = run('tar -C /data/web_static/releases/{} -xzf /tmp/{}'.format(
+               no_ext_archive, archive))
+    if res.failed:
+        print('failed to untar archive...')
+        return False
+    res = run('rm /tmp/{}'.format(archive))
+    if res.failed:
+        print('failed to remove archive...')
+        return False
+    res = run('mv /data/web_static/releases/{}/web_static/* \
+               /data/web_static/releases/{}'
+              .format(no_ext_archive, no_ext_archive))
+    if res.failed:
+        print('failed to move extraction to proper directory...')
+        return False
+    res = run('rm -rf /data/web_static/releases/{}/web_static'
+              .format(no_ext_archive))
+    if res.failed:
+        print('failed to remove first copy of extraction after move...')
+        return False
+    # clean up old release and remove it
+    res = run('rm -rf /data/web_static/current')
+    if res.failed:
+        print('failed to clean up old release...')
+        return False
+    res = run('ln -sfn /data/web_static/releases/{} /data/web_static/current'
+              .format(no_ext_archive))
+    if res.failed:
+        print('failed to create link to new release...')
+        return False
+
+    print('\nNew Version Successfuly Deployed!\n')
+
+    return True
 
 
 def deploy():
-    """ creates and distributes an archive to your web servers
+    """deploy executes do_pack and do_deploy to deploy the latest
+        changes to the server list
     """
-    new_archive_path = do_pack()
-    if exists(new_archive_path) is False:
+    ar_path = do_pack()
+    print(ar_path)
+    if ar_path is None:
+        print('Failed to create archive from web_static')
         return False
-    result = do_deploy(new_archive_path)
-    return result
-
-
-# The script follows these steps:
-# Call the do_pack() function & store the path of the created archive
-# Return False if no archive has been created
-# Call the do_deploy(archive_path) func, using the path of the new archive
-# Return the return value of do_deploy
+    return do_deploy(ar_path)
