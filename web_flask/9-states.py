@@ -1,33 +1,28 @@
 #!/usr/bin/python3
-"""run flask server"""
+"""
+starts a Flask web application
+"""
+
 from flask import Flask, render_template
+from models import *
 from models import storage
 app = Flask(__name__)
 
 
-@app.route("/states", strict_slashes=False)
-def states():
-    """states returned"""
-    return render_template('9-states.html\
-', states=storage.all("State"), state=None)
-
-
-@app.route("/states/<id>", strict_slashes=False)
-def id_state(id):
-    """states returned"""
+@app.route('/states', strict_slashes=False)
+@app.route('/states/<state_id>', strict_slashes=False)
+def states(state_id=None):
+    """display the states and cities listed in alphabetical order"""
     states = storage.all("State")
-    # if "State.{}".format(id) not in states:
-    #     return render_template('9-states.html')
-    state = storage.all("State").get("State.{}".format(id))
-    return render_template('9-states.html\
-', state=state, states=None)
+    if state_id is not None:
+        state_id = 'State.' + state_id
+    return render_template('9-states.html', states=states, state_id=state_id)
 
 
 @app.teardown_appcontext
-def reset(error):
-    """reload data"""
+def teardown_db(exception):
+    """closes the storage on teardown"""
     storage.close()
 
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port='5000')
