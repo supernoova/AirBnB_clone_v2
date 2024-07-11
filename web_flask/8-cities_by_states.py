@@ -1,32 +1,40 @@
 #!/usr/bin/python3
-"""script to start a flask app on localhost
-"""
+"""run flask server"""
+from flask import Flask, render_template
 from models import storage
-from flask import Flask
-from flask import render_template
 app = Flask(__name__)
 
 
-@app.teardown_appcontext
-def appcontext_teardown(exc=None):
-    """called on teardown of app contexts,
-        for more info on contexts visit
-        -> http://flask.pocoo.org/docs/1.0/appcontext/
+def sortdict(dictionary):
+    diction = {}
+    for i in dictionary:
+        diction[i] = dictionary[i]
 
-        Storage.close() closes the sql scoped session or reloads file
-            storage.
-    """
+
+@app.route("/states_list", strict_slashes=False)
+def states():
+    """states returned"""
+    return render_template('7-states_list.html', states=storage.all("State"))
+
+
+@app.route("/cities_by_states", strict_slashes=False)
+def cities_state():
+    """states returned"""
+    states = storage.all("State")
+    cities_dict = {}
+    for state in states.values():
+        cities_dict[state.name] = sorted(
+                                state.cities, key=lambda city: city.name
+                                )
+    return render_template('8-cities_by_states.html\
+', states=states, cities=cities_dict)
+
+
+@app.teardown_appcontext
+def reset(error):
+    """reload data"""
     storage.close()
 
 
-@app.route('/cities_by_states', strict_slashes=False)
-def conditional_templating(n=None):
-    """checking input data using templating"""
-    states = storage.all("State")
-    data = {}
-    return render_template('8-cities_by_states.html',
-                           states=storage.all("State"))
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)

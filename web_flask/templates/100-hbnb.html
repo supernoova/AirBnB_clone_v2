@@ -10,11 +10,11 @@
     <link rel="stylesheet" href="../static/styles/3-header.css" />
     <link rel="stylesheet" href="../static/styles/3-footer.css" />
     <link rel="stylesheet" href="../static/styles/6-filters.css" />
+    <link rel="stylesheet" href="../static/styles/8-places.css">
 </head>
 
 <body>
     <header>
-        <div id="header_logo"></div>
     </header>
     <div class="container">
         <section class="filters">
@@ -52,6 +52,42 @@
             <button>
                 Search
             </button>
+        </section>
+        <section class="places">
+            <h1>
+                Places
+            </h1>
+            <section class="all_articles">
+                {% for place in places.values() | sort(attribute='name') %}
+                <article>
+                    <div>
+                        <h2>{{ place.name }}</h2>
+                        <div class="price_by_night">
+                            ${{ place.price_by_night }}
+                        </div>
+                    </div>
+                    <section class="information">
+                        <div class="max_guest">
+                            {{ place.max_guest }}
+                        </div>
+                        <div class="number_rooms">
+                            {{ place.number_rooms }}
+                        </div>
+                        <div class="number_bathrooms">
+                            {{ place.number_bathrooms }}
+                        </div>
+                    </section>
+                    <section>
+                        <div class="user">
+                            <p><b>Owner:</b> {{ place.user.first_name }} {{ place.user.last_name }} </p>
+                        </div>
+                        <div class="description">
+                            {{ place.description|safe }}
+                        </div>
+                    </section>
+                </article>
+                {% endfor %}
+            </section>
         </section>
     </div>
     <footer>

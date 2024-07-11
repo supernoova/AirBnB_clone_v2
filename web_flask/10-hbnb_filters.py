@@ -1,31 +1,33 @@
 #!/usr/bin/python3
-"""script to start a flask app on localhost
-"""
+"""run flask server"""
+from flask import Flask, render_template
 from models import storage
-from flask import Flask
-from flask import render_template
 app = Flask(__name__)
 
 
-@app.teardown_appcontext
-def appcontext_teardown(exc=None):
-    """called on teardown of app contexts,
-        for more info on contexts visit
-        -> http://flask.pocoo.org/docs/1.0/appcontext/
+@app.route("/hbnb_filters", strict_slashes=False)
+def states():
+    """states returned"""
+    return render_template('10-hbnb_filters.html\
+', states=storage.all("State"), amenities=storage.all('Amenity'))
 
-        Storage.close() closes the sql scoped session or reloads file
-            storage.
-    """
+
+@app.route("/states/<id>", strict_slashes=False)
+def id_state(id):
+    """states returned"""
+    states = storage.all("State")
+    # if "State.{}".format(id) not in states:
+    #     return render_template('9-states.html')
+    state = storage.all("State").get("State.{}".format(id))
+    return render_template('9-states.html\
+', state=state, states=None)
+
+
+@app.teardown_appcontext
+def reset(error):
+    """reload data"""
     storage.close()
 
 
-@app.route('/hbnb_filters', strict_slashes=False)
-def conditional_templating(id=None):
-    """checking input data using templating"""
-    return render_template('10-hbnb_filters.html',
-                           states=storage.all("State").values(),
-                           amenities=storage.all("Amenity").values())
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)

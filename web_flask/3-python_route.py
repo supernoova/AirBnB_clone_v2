@@ -1,34 +1,44 @@
 #!/usr/bin/python3
-"""script to start a flask app on localhost
-"""
+"""run flask server"""
+from markupsafe import escape
 from flask import Flask
 app = Flask(__name__)
 
 
-@app.route('/', strict_slashes=False)
-def hello():
-    """basic routing"""
-    return 'Hello HBNB!'
+def makeSpaces(text):
+    string = ""
+    for i in text:
+        if i == '_':
+            string += ' '
+        else:
+            string += i
+    return string
 
 
-@app.route('/hbnb', strict_slashes=False)
+@app.route("/", strict_slashes=False)
+def hello_world():
+    """hello returned"""
+    return "Hello HBNB!"
+
+
+@app.route("/hbnb", strict_slashes=False)
 def hbnb():
-    """specific routing"""
-    return 'HBNB'
+    """hbnb returned"""
+    return "HBNB"
 
 
-@app.route('/c/<string:text>', strict_slashes=False)
-def dynamic_text(text=None):
-    """dynamic routing"""
-    return "C {}".format(text.replace('_', ' '))
+@app.route("/c/<text>", strict_slashes=False)
+def cIsFun(text):
+    """hbnb returned"""
+    return "C {}".format(makeSpaces(text))
 
 
-@app.route('/python', strict_slashes=False)
-@app.route('/python/<string:text>', strict_slashes=False)
-def python_dynamic(text='is_cool'):
-    """dynamic w/ defaults"""
-    return "Python {}".format(text.replace('_', ' '))
+@app.route("/python", strict_slashes=False)
+@app.route("/python/<text>", strict_slashes=False)
+def pyIsFun(text="is cool"):
+    """hbnb returned"""
+    return "Python {}".format(makeSpaces(text))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
